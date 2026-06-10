@@ -128,85 +128,98 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Period tabs */}
-      <div className={s.tabs}>
-        {PERIODS.map(p => (
-          <button
-            key={p.label}
-            className={`${s.tab} ${period.label === p.label ? s.tabActive : ''}`}
-            onClick={() => setPeriod(p)}
-          >{p.label}</button>
-        ))}
-      </div>
+      {summary?.restricted?.length > 0 && (
+        <div className={s.heroRow}>
+          {summary.restricted.map((r, i) => (
+            <React.Fragment key={r.name}>
+              {i > 0 && <div className={s.heroDivider} />}
+              <div className={s.heroItem}>
+                <div className={s.heroLabel}>{r.name}</div>
+                <div className={s.heroNumber}>{fmt(r.balance)}</div>
+                <div className={s.delta} style={{ color: 'var(--text3)' }}>restricted</div>
+              </div>
+            </React.Fragment>
+          ))}
 
-      {loading ? (
-        <div className={s.loading}>Loading charts…</div>
-      ) : (
-        <>
-          <div className={s.grid2}>
-            <ChartCard title="Net worth">
-              <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={chartData}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v/1000).toFixed(0) + 'k'} width={48} />
-                  <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
-                  <Line type="monotone" dataKey="netWorth" stroke="#22c55e" strokeWidth={2} dot={false} name="Net worth" />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Liquid balance">
-              <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={chartData}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v/1000).toFixed(0) + 'k'} width={48} />
-                  <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
-                  <Line type="monotone" dataKey="liquid" stroke="#94a3b8" strokeWidth={2} dot={false} name="Liquid" />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Investments">
-              <ResponsiveContainer width="100%" height={160}>
-                <LineChart data={chartData}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v/1000).toFixed(0) + 'k'} width={48} />
-                  <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
-                  <Line type="monotone" dataKey="invest" stroke="#3b82f6" strokeWidth={2} dot={false} name="Investments" />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Income vs implied expenses">
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={cashflowData} barGap={2}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + v} width={52} />
-                  <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
-                  <Bar dataKey="income" fill="rgba(34,197,94,0.75)" radius={[3,3,0,0]} name="Income" />
-                  <Bar dataKey="expenses" fill="rgba(239,68,68,0.7)" radius={[3,3,0,0]} name="Expenses" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
+          {/* Period tabs */}
+          <div className={s.tabs}>
+            {PERIODS.map(p => (
+              <button
+                key={p.label}
+                className={`${s.tab} ${period.label === p.label ? s.tabActive : ''}`}
+                onClick={() => setPeriod(p)}
+              >{p.label}</button>
+            ))}
           </div>
 
-          <ChartCard title="Debt level">
-            <ResponsiveContainer width="100%" height={130}>
-              <LineChart data={chartData}>
-                <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v/1000).toFixed(0) + 'k'} width={48} />
-                <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
-                <Line type="monotone" dataKey="debt" stroke="#ef4444" strokeWidth={2} dot={false} name="Debt" />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </>
-      )}
-    </div>
-  )
-}
+          {loading ? (
+            <div className={s.loading}>Loading charts…</div>
+          ) : (
+            <>
+              <div className={s.grid2}>
+                <ChartCard title="Net worth">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
+                      <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v / 1000).toFixed(0) + 'k'} width={48} />
+                      <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
+                      <Line type="monotone" dataKey="netWorth" stroke="#22c55e" strokeWidth={2} dot={false} name="Net worth" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard title="Liquid balance">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
+                      <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v / 1000).toFixed(0) + 'k'} width={48} />
+                      <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
+                      <Line type="monotone" dataKey="liquid" stroke="#94a3b8" strokeWidth={2} dot={false} name="Liquid" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard title="Investments">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
+                      <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v / 1000).toFixed(0) + 'k'} width={48} />
+                      <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
+                      <Line type="monotone" dataKey="invest" stroke="#3b82f6" strokeWidth={2} dot={false} name="Investments" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard title="Income vs implied expenses">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={cashflowData} barGap={2}>
+                      <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
+                      <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + v} width={52} />
+                      <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
+                      <Bar dataKey="income" fill="rgba(34,197,94,0.75)" radius={[3, 3, 0, 0]} name="Income" />
+                      <Bar dataKey="expenses" fill="rgba(239,68,68,0.7)" radius={[3, 3, 0, 0]} name="Expenses" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              </div>
+
+              <ChartCard title="Debt level">
+                <ResponsiveContainer width="100%" height={130}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
+                    <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v / 1000).toFixed(0) + 'k'} width={48} />
+                    <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
+                    <Line type="monotone" dataKey="debt" stroke="#ef4444" strokeWidth={2} dot={false} name="Debt" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </>
+          )}
+        </div>
+      )
+      }
