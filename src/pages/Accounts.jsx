@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import api from '../api'
 import s from './Accounts.module.css'
 
-const TYPES = ['debit', 'credit', 'debt', 'investment', 'cash']
-const TYPE_LABELS = { debit: 'Debit', credit: 'Credit', debt: 'Debt', investment: 'Invest', cash: 'Cash' }
-const TYPE_COLORS = { debit: '#22c55e', credit: '#ef4444', debt: '#f59e0b', investment: '#3b82f6', cash: '#9090A8' }
+const TYPES = ['debit', 'credit', 'debt', 'investment', 'cash', 'restricted']
+const TYPE_LABELS = { debit: 'Debit', credit: 'Credit', debt: 'Debt', investment: 'Invest', cash: 'Cash', restricted: 'Restricted' }
+const TYPE_COLORS = { debit: '#22c55e', credit: '#ef4444', debt: '#f59e0b', investment: '#3b82f6', cash: '#9090A8', restricted: '#a855f7' }
 
 export default function Accounts() {
   const [accounts, setAccounts] = useState([])
