@@ -28,6 +28,41 @@ const tooltipStyle = {
   itemStyle: { color: '#E8E8F0' },
 }
 
+// SVG icons for known restricted account types, matched by name substring
+const RESTRICTED_ICONS = [
+  {
+    match: ['meal', 'food', 'lunch', 'refeição'],
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.55 }}>
+        {/* Fork and knife */}
+        <line x1="8" y1="2" x2="8" y2="22" />
+        <path d="M5 2v6a3 3 0 0 0 6 0V2" />
+        <line x1="16" y1="2" x2="16" y2="22" />
+      </svg>
+    ),
+  },
+  {
+    match: ['medic', 'health', 'medicine', 'pharma', 'benefit', 'saúde'],
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.55 }}>
+        {/* Cross / plus */}
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <line x1="12" y1="8" x2="12" y2="16" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+      </svg>
+    ),
+  },
+]
+
+function getRestrictedIcon(name) {
+  if (!name) return null
+  const lower = name.toLowerCase()
+  for (const entry of RESTRICTED_ICONS) {
+    if (entry.match.some(kw => lower.includes(kw))) return entry.icon
+  }
+  return null
+}
+
 export default function Dashboard() {
   const [summary, setSummary] = useState(null)
   const [snapshots, setSnapshots] = useState([])
@@ -133,7 +168,10 @@ export default function Dashboard() {
             <Fragment key={r.name}>
               {i > 0 && <div className={s.heroDivider} />}
               <div className={s.heroItem}>
-                <div className={s.heroLabel}>{r.name}</div>
+                <div className={s.heroLabel} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  {getRestrictedIcon(r.name)}
+                  {r.name}
+                </div>
                 <div className={s.heroNumber}>{fmt(r.balance)}</div>
                 <div className={s.delta} style={{ color: 'var(--text3)' }}>restricted</div>
               </div>
