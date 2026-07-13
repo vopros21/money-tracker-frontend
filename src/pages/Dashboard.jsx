@@ -21,18 +21,14 @@ const fmtDelta = n => (n >= 0 ? '+' : '') + fmt(n)
 // when the series is flat (dataMin === dataMax) so the line doesn't
 // collapse onto the horizontal centre of the chart.
 function paddedDomain(padRatio = 0.08, flatFallback = 10) {
-  return [
-    (dataMin, dataMax) => {
-      const range = (dataMax - dataMin) || Math.abs(dataMax) * 0.1 || flatFallback
-      return Math.floor(dataMin - range * padRatio)
-    },
-    (dataMin, dataMax) => {
-      const range = (dataMax - dataMin) || Math.abs(dataMax) * 0.1 || flatFallback
-      return Math.ceil(dataMax + range * padRatio)
-    },
-  ]
+  return ([dataMin, dataMax]) => {
+    const range = (dataMax - dataMin) || Math.abs(dataMax) * 0.1 || flatFallback
+    return [
+      Math.floor(dataMin - range * padRatio),
+      Math.ceil(dataMax + range * padRatio),
+    ]
+  }
 }
-
 function ChartCard({ title, delta, children }) {
   return (
     <div className={s.chartCard}>
