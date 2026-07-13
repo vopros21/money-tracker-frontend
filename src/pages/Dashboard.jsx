@@ -54,6 +54,7 @@ function DeltaBadge({ value, goodWhenNegative = false, suffix = 'this week' }) {
     </span>
   )
 }
+const tooltipStyle = {
   contentStyle: { background: '#1E1E26', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, fontSize: 12 },
   labelStyle: { color: '#9090A8' },
   itemStyle: { color: '#E8E8F0' },
