@@ -1,5 +1,5 @@
 import { useEffect, useState, Fragment } from 'react'
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
 import api from '../api'
 import s from './Dashboard.module.css'
 
@@ -13,16 +13,47 @@ const PERIODS = [
 const fmt = n => '€' + Number(n ?? 0).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 const fmtDelta = n => (n >= 0 ? '+' : '') + fmt(n)
 
-function ChartCard({ title, children }) {
+// Recharts domain accepts [min, max] as functions receiving the actual
+// dataMin/dataMax for the rendered key, recomputed on every render (period
+// change, new data, etc). We pad by a % of the observed range rather than
+// a fixed € amount so this scales correctly whether the series sits around
+// €500 (investments) or €200k (debt). Falls back to a small fixed range
+// when the series is flat (dataMin === dataMax) so the line doesn't
+// collapse onto the horizontal centre of the chart.
+function paddedDomain(padRatio = 0.08, flatFallback = 10) {
+  return [
+    (dataMin, dataMax) => {
+      const range = (dataMax - dataMin) || Math.abs(dataMax) * 0.1 || flatFallback
+      return Math.floor(dataMin - range * padRatio)
+    },
+    (dataMin, dataMax) => {
+      const range = (dataMax - dataMin) || Math.abs(dataMax) * 0.1 || flatFallback
+      return Math.ceil(dataMax + range * padRatio)
+    },
+  ]
+}
+
+function ChartCard({ title, delta, children }) {
   return (
     <div className={s.chartCard}>
-      <div className={s.chartTitle}>{title}</div>
+      <div className={s.chartTitle}>
+        {title}
+        {delta}
+      </div>
       {children}
     </div>
   )
 }
 
-const tooltipStyle = {
+function DeltaBadge({ value, goodWhenNegative = false, suffix = 'this week' }) {
+  if (value === undefined || value === null || value === 0) return null
+  const isGood = goodWhenNegative ? value < 0 : value > 0
+  return (
+    <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 400, color: isGood ? '#22c55e' : '#ef4444' }}>
+      {fmtDelta(value)} {suffix}
+    </span>
+  )
+}
   contentStyle: { background: '#1E1E26', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, fontSize: 12 },
   labelStyle: { color: '#9090A8' },
   itemStyle: { color: '#E8E8F0' },
@@ -119,6 +150,12 @@ export default function Dashboard() {
       return { date: d.date, income: inc, expenses: i === 0 ? 0 : expenses }
     }).filter((_, i) => i > 0)
   })()
+
+  // Investments will sit under €1k for a while, so don't force €k formatting
+  // (that's what was rounding everything down to "€0k"). Switch formats once
+  // the balance is actually large enough for €k to be legible.
+  const investMax = Math.max(0, ...chartData.map(d => Math.abs(d.invest)))
+  const investTickFmt = v => (investMax >= 1000 ? '€' + (v / 1000).toFixed(1) + 'k' : '€' + v.toFixed(0))
 
   const shortDate = d => {
     if (!d) return ''
@@ -220,12 +257,12 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Investments">
+            <ChartCard title="Investments" delta={<DeltaBadge value={summary?.investments_delta} />}>
               <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={chartData}>
                   <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                   <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v / 1000).toFixed(0) + 'k'} width={48} />
+                  <YAxis domain={paddedDomain(0.15, 5)} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={investTickFmt} width={48} />
                   <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
                   <Line type="monotone" dataKey="invest" stroke="#3b82f6" strokeWidth={2} dot={false} name="Investments" />
                 </LineChart>
@@ -246,13 +283,21 @@ export default function Dashboard() {
             </ChartCard>
           </div>
 
-          <ChartCard title="Debt level">
+          <ChartCard title="Debt level" delta={<DeltaBadge value={summary?.debt_delta} goodWhenNegative />}>
             <ResponsiveContainer width="100%" height={130}>
               <LineChart data={chartData}>
                 <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v / 1000).toFixed(0) + 'k'} width={48} />
+                <YAxis domain={paddedDomain(0.02, 1000)} tick={{ fontSize: 11, fill: '#55556A' }} axisLine={false} tickLine={false} tickFormatter={v => '€' + (v / 1000).toFixed(1) + 'k'} width={52} />
                 <Tooltip formatter={v => fmt(v)} labelFormatter={shortDate} {...tooltipStyle} />
+                {chartData.length > 0 && (
+                  <ReferenceLine
+                    y={chartData[0].debt}
+                    stroke="#55556A"
+                    strokeDasharray="3 3"
+                    ifOverflow="extendDomain"
+                  />
+                )}
                 <Line type="monotone" dataKey="debt" stroke="#ef4444" strokeWidth={2} dot={false} name="Debt" />
               </LineChart>
             </ResponsiveContainer>
