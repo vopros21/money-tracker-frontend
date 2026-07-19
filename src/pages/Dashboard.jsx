@@ -108,10 +108,16 @@ export default function Dashboard() {
     setLoading(true)
     Promise.all([
       api.get(`/api/snapshots/history?from=${from}&to=${to}`),
-      api.get(`/api/incomes/summary?from=${from}&to=${to}`),
+      // Raw income entries (not the weekly-bucketed /summary endpoint) —
+      // we need each entry's actual received_at so it can be matched to
+      // the snapshot interval it really falls in, see cashflowData below.
+      api.get(`/api/incomes?from=${from}&to=${to}`),
     ]).then(([sRes, iRes]) => {
       setSnapshots(sRes.data.snapshots)
-      setIncomes(iRes.data.summary)
+      // NOTE: confirm this matches the actual response shape of
+      // GET /api/incomes — adjust the key below if it differs
+      // (e.g. r.data.data instead of r.data.incomes).
+      setIncomes(iRes.data.incomes ?? iRes.data.data ?? [])
     }).finally(() => setLoading(false))
   }, [period])
 
@@ -134,18 +140,26 @@ export default function Dashboard() {
     return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
   })()
 
-  // Income vs implied expenses by week
+  // Income vs implied expenses, per snapshot interval.
+  // "Week" in the underlying formula really just means "since the last
+  // snapshot" — snapshots aren't taken on a fixed weekly cadence, so income
+  // is summed by matching each entry's received_at to the actual date range
+  // between two consecutive snapshots, rather than to a calendar week bucket.
+  // The first chart point is skipped (no prior snapshot to diff against, so
+  // expenses can't be computed for it).
   const cashflowData = (() => {
-    const incomeByWeek = {}
-    for (const i of incomes) {
-      incomeByWeek[i.week_start] = parseFloat(i.total)
-    }
     return chartData.map((d, i) => {
-      const prev = chartData[i - 1]
-      const inc = incomeByWeek[d.date] ?? 0
-      const expenses = Math.max(0, (prev?.liquid ?? d.liquid) + inc - d.liquid)
-      return { date: d.date, income: inc, expenses: i === 0 ? 0 : expenses }
-    }).filter((_, i) => i > 0)
+      if (i === 0) return null
+      const prevDate = chartData[i - 1].date
+      const inc = incomes
+        .filter(inc => {
+          const rd = inc.received_at?.slice(0, 10) ?? inc.received_at
+          return rd > prevDate && rd <= d.date
+        })
+        .reduce((sum, inc) => sum + parseFloat(inc.amount), 0)
+      const expenses = Math.max(0, chartData[i - 1].liquid + inc - d.liquid)
+      return { date: d.date, income: inc, expenses }
+    }).filter(Boolean)
   })()
 
   // Investments will sit under €1k for a while, so don't force €k formatting
