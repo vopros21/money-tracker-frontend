@@ -8,6 +8,7 @@ const PERIODS = [
   { label: '3M', days: 90 },
   { label: '6M', days: 180 },
   { label: '1Y', days: 365 },
+  { label: 'All', days: null },
 ]
 
 const fmt = n => '€' + Number(n ?? 0).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -104,14 +105,19 @@ export default function Dashboard() {
 
   useEffect(() => {
     const to = new Date().toISOString().slice(0, 10)
-    const from = new Date(Date.now() - period.days * 86400000).toISOString().slice(0, 10)
+    const from = period.days
+      ? new Date(Date.now() - period.days * 86400000).toISOString().slice(0, 10)
+      : null
+
+    const qs = (base) => from ? `${base}from=${from}&to=${to}` : `${base}to=${to}`
+
     setLoading(true)
     Promise.all([
-      api.get(`/api/snapshots/history?from=${from}&to=${to}`),
+      api.get(qs('/api/snapshots/history?')),
       // Raw income entries (not the weekly-bucketed /summary endpoint) —
       // we need each entry's actual received_at so it can be matched to
       // the snapshot interval it really falls in, see cashflowData below.
-      api.get(`/api/incomes?from=${from}&to=${to}`),
+      api.get(qs('/api/incomes?')),
     ]).then(([sRes, iRes]) => {
       setSnapshots(sRes.data.snapshots)
       // NOTE: confirm this matches the actual response shape of
@@ -139,6 +145,16 @@ export default function Dashboard() {
     }
     return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
   })()
+
+  // Diff the first and last point of the currently-rendered period so the
+  // Investments/Debt badges track the selected tab instead of a fixed
+  // "this week" number from the summary endpoint.
+  const periodDelta = (key) => {
+    if (chartData.length < 2) return undefined
+    return chartData[chartData.length - 1][key] - chartData[0][key]
+  }
+  const investPeriodDelta = periodDelta('invest')
+  const debtPeriodDelta = periodDelta('debt')
 
   // Income vs implied expenses, per snapshot interval.
   // "Week" in the underlying formula really just means "since the last
@@ -268,7 +284,7 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Investments" delta={<DeltaBadge value={summary?.investments_delta} />}>
+            <ChartCard title="Investments" delta={<DeltaBadge value={investPeriodDelta} suffix={period.label} />}>
               <ResponsiveContainer width="100%" height={160}>
                 <LineChart data={chartData}>
                   <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
@@ -294,7 +310,7 @@ export default function Dashboard() {
             </ChartCard>
           </div>
 
-          <ChartCard title="Debt level" delta={<DeltaBadge value={summary?.debt_delta} goodWhenNegative />}>
+          <ChartCard title="Debt level" delta={<DeltaBadge value={debtPeriodDelta} goodWhenNegative suffix={period.label} />}>
             <ResponsiveContainer width="100%" height={130}>
               <LineChart data={chartData}>
                 <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
