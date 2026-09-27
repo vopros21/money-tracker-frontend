@@ -60,7 +60,7 @@
   color: var(--text2);
   transition: all 0.1s;
 }
-.tab:hover { color: var(--text); border-color: var(--text3); }
+.tab:hover:not(.tabActive) { color: var(--text); border-color: var(--text3); }
 .tabActive {
   background: var(--text);
   color: var(--bg);
